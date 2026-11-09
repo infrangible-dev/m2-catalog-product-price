@@ -11,7 +11,7 @@ define([
 ], function ($, priceUtils, template) {
     'use strict';
 
-    var swatchRendererMixin = {
+    const swatchRendererMixin = {
         catalogProductPriceOptions: {
             priceBoxSelection: '.product-info-main [data-role=priceBox]',
             finalPriceSelection: '.product-info-main .normal-price',
@@ -30,13 +30,13 @@ define([
         _UpdatePrice: function () {
             this._super();
 
-            var prices = this._getNewPrices();
+            const prices = this._getNewPrices();
 
             $(this.catalogProductPriceOptions.priceBoxSelection).find('span:first').removeClass('special-price');
 
-            var finalPriceDisplayLabelNode = $(this.catalogProductPriceOptions.finalPriceDisplayLabelSelection);
+            const finalPriceDisplayLabelNode = $(this.catalogProductPriceOptions.finalPriceDisplayLabelSelection);
 
-            var finalPriceDisplayLabel = prices.finalPrice.displayLabel;
+            const finalPriceDisplayLabel = prices.finalPrice.displayLabel;
             if (finalPriceDisplayLabel) {
                 finalPriceDisplayLabelNode.html(finalPriceDisplayLabel);
                 finalPriceDisplayLabelNode.show();
@@ -44,17 +44,17 @@ define([
                 finalPriceDisplayLabelNode.html('');
                 finalPriceDisplayLabelNode.hide();
 
-                var isShow = typeof prices !== 'undefined' && prices.oldPrice.amount !== prices.finalPrice.amount;
+                const isShow = typeof prices !== 'undefined' && prices.oldPrice.amount !== prices.finalPrice.amount;
                 $(this.catalogProductPriceOptions.finalPriceSelection).toggleClass('special-price', isShow);
             }
 
-            var finalPriceInformationNode = $(this.catalogProductPriceOptions.finalPriceInformationSelection);
+            let finalPriceInformationNode = $(this.catalogProductPriceOptions.finalPriceInformationSelection);
             if (finalPriceInformationNode.length === 0) {
                 finalPriceInformationNode = $('<span>', {class: 'price-information'});
                 $(this.catalogProductPriceOptions.finalPricePriceSelection).after(finalPriceInformationNode);
             }
 
-            var finalPriceInformation = prices.finalPrice.information;
+            const finalPriceInformation = prices.finalPrice.information;
             if (finalPriceInformation) {
                 finalPriceInformationNode.html(finalPriceInformation);
                 finalPriceInformationNode.show();
@@ -63,9 +63,9 @@ define([
                 finalPriceInformationNode.hide();
             }
 
-            var oldPriceDisplayLabelNode = $(this.catalogProductPriceOptions.oldPriceDisplayLabelSelection);
+            const oldPriceDisplayLabelNode = $(this.catalogProductPriceOptions.oldPriceDisplayLabelSelection);
 
-            var oldPriceDisplayLabel = prices.oldPrice.displayLabel;
+            const oldPriceDisplayLabel = prices.oldPrice.displayLabel;
             if (oldPriceDisplayLabel) {
                 oldPriceDisplayLabelNode.html(oldPriceDisplayLabel);
                 oldPriceDisplayLabelNode.show();
@@ -74,9 +74,9 @@ define([
                 oldPriceDisplayLabelNode.hide();
             }
 
-            var oldPriceInformationNode = $(this.catalogProductPriceOptions.oldPriceInformationSelection);
+            let oldPriceInformationNode = $(this.catalogProductPriceOptions.oldPriceInformationSelection);
 
-            var oldPriceInformation = prices.oldPrice.information;
+            const oldPriceInformation = prices.oldPrice.information;
             if (oldPriceInformation) {
                 if (oldPriceInformationNode.length === 0) {
                     oldPriceInformationNode = $('<span>', {class: 'price-information'});
@@ -91,20 +91,20 @@ define([
                 }
             }
 
-            var informationNode = $(this.catalogProductPriceOptions.informationSelection);
+            let informationNode = $(this.catalogProductPriceOptions.informationSelection);
 
-            var priceInformation = prices.priceInformation;
+            const priceInformation = prices.priceInformation;
             if (priceInformation) {
                 if (informationNode.length === 0) {
                     informationNode = $('<span>', {class: 'price-information'});
                     $(this.catalogProductPriceOptions.finalPriceSelection).before(informationNode);
                 }
 
-                var templateData = {};
+                const templateData = {};
 
                 templateData.displayLabel = priceInformation.displayLabel;
 
-                var informationAmountValue = priceInformation.price;
+                const informationAmountValue = priceInformation.price;
                 templateData.amountValue = informationAmountValue;
                 templateData.amount = informationAmountValue ?
                     priceUtils.formatPrice(informationAmountValue, this.options.jsonConfig.currencyFormat) : null;
