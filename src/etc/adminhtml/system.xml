@@ -2,7 +2,7 @@
 
 <!--
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
 -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
@@ -130,7 +130,7 @@
                 <group id="label" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Label</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/min_price/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>
@@ -153,7 +153,7 @@
                 <group id="information" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Information</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/min_price/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>
@@ -183,7 +183,7 @@
                 <group id="label" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Label</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/max_price/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>
@@ -206,7 +206,7 @@
                 <group id="information" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Information</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/max_price/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>
@@ -236,7 +236,7 @@
                 <group id="label" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Label</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/information/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>
@@ -259,7 +259,7 @@
                 <group id="price" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Price</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/information/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>
@@ -282,7 +282,7 @@
                 <group id="information" translate="label" type="text" sortOrder="40" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Information</label>
                     <depends>
-                        <field id="infrangible_catalogproductprice/price/enable">1</field>
+                        <field id="infrangible_catalogproductprice/information/enable">1</field>
                     </depends>
                     <field id="enable" translate="label" type="select" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable</label>

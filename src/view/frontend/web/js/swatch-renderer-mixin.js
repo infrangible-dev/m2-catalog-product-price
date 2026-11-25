@@ -1,6 +1,6 @@
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
  */
 
@@ -36,15 +36,16 @@ define([
 
             const finalPriceDisplayLabelNode = $(this.catalogProductPriceOptions.finalPriceDisplayLabelSelection);
 
+            // Labels are plain text, information texts are HTML with the tags the module allows.
             const finalPriceDisplayLabel = prices.finalPrice.displayLabel;
             if (finalPriceDisplayLabel) {
-                finalPriceDisplayLabelNode.html(finalPriceDisplayLabel);
+                finalPriceDisplayLabelNode.text(finalPriceDisplayLabel);
                 finalPriceDisplayLabelNode.show();
             } else {
-                finalPriceDisplayLabelNode.html('');
+                finalPriceDisplayLabelNode.text('');
                 finalPriceDisplayLabelNode.hide();
 
-                const isShow = typeof prices !== 'undefined' && prices.oldPrice.amount !== prices.finalPrice.amount;
+                const isShow = prices.oldPrice.amount !== prices.finalPrice.amount;
                 $(this.catalogProductPriceOptions.finalPriceSelection).toggleClass('special-price', isShow);
             }
 
@@ -67,10 +68,10 @@ define([
 
             const oldPriceDisplayLabel = prices.oldPrice.displayLabel;
             if (oldPriceDisplayLabel) {
-                oldPriceDisplayLabelNode.html(oldPriceDisplayLabel);
+                oldPriceDisplayLabelNode.text(oldPriceDisplayLabel);
                 oldPriceDisplayLabelNode.show();
             } else {
-                oldPriceDisplayLabelNode.html('');
+                oldPriceDisplayLabelNode.text('');
                 oldPriceDisplayLabelNode.hide();
             }
 
@@ -106,8 +107,12 @@ define([
 
                 const informationAmountValue = priceInformation.price;
                 templateData.amountValue = informationAmountValue;
-                templateData.amount = informationAmountValue ?
-                    priceUtils.formatPrice(informationAmountValue, this.options.jsonConfig.currencyFormat) : null;
+                // formatted like Magento's price box formats the other prices, without sign
+                templateData.amount = informationAmountValue ? priceUtils.formatPriceLocale(
+                    informationAmountValue,
+                    this.options.jsonConfig.currencyFormat,
+                    false
+                ) : null;
 
                 templateData.information = priceInformation.information;
 

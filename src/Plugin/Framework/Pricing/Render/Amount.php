@@ -2,75 +2,86 @@
 
 declare(strict_types=1);
 
-namespace Infrangible\CatalogProductPrice\Plugin\Framework\Pricing\Render;
-
-use FeWeDev\Base\Variables;
-use Infrangible\Core\Helper\Block;
-
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+namespace Infrangible\CatalogProductPrice\Plugin\Framework\Pricing\Render;
+
+use Infrangible\CatalogProductPrice\Helper\Amount as AmountHelper;
+use Infrangible\Core\Helper\Block;
+use Magento\Framework\Pricing\Render\Amount as Subject;
+
+/**
+ * Adds the information text of the price type to rendered amounts.
  */
 class Amount
 {
-    /** @var \Infrangible\CatalogProductPrice\Helper\Amount */
-    protected $amountHelper;
-
-    /** @var Variables */
-    protected $variables;
-
-    /** @var Block */
-    protected $blockHelper;
-
-    public function __construct(
-        \Infrangible\CatalogProductPrice\Helper\Amount $amountHelper,
-        Variables $variables,
-        Block $blockHelper
-    ) {
-        $this->amountHelper = $amountHelper;
-        $this->variables = $variables;
-        $this->blockHelper = $blockHelper;
-    }
-
-    public function beforeToHtml(\Magento\Framework\Pricing\Render\Amount $subject): void
+    /**
+     * @param AmountHelper $amountHelper
+     * @param Block $blockHelper
+     */
+    public function __construct(protected AmountHelper $amountHelper, protected Block $blockHelper)
     {
-        $cssClasses = $subject->hasData('css_classes') ? explode(
-            ' ',
-            $subject->getData('css_classes')
-        ) : [];
-
-        $cssClasses[] = 'force-display';
-
-        $subject->setData(
-            'css_classes',
-            join(
-                ' ',
-                $cssClasses
-            )
-        );
     }
 
-    public function afterHasAdjustmentsHtml(\Magento\Framework\Pricing\Render\Amount $subject, bool $result): bool
+    /**
+     * Marks the amount, so the CSS shows old prices with a label also when Magento hides them.
+     *
+     * @param Subject $subject
+     *
+     * @return void
+     */
+    public function beforeToHtml(Subject $subject): void
     {
-        return $result || ! $this->variables->isEmpty($this->amountHelper->getInformation($subject));
+        $cssClasses = $subject->getData('css_classes');
+
+        $cssClasses = is_string($cssClasses) && $cssClasses !== '' ? explode(' ', $cssClasses) : [];
+
+        if (! in_array('force-display', $cssClasses, true)) {
+            $cssClasses[] = 'force-display';
+        }
+
+        $subject->setData('css_classes', implode(' ', $cssClasses));
     }
 
-    public function afterGetAdjustmentsHtml(\Magento\Framework\Pricing\Render\Amount $subject, string $result): string
+    /**
+     * Reports adjustments when the price type has an information text.
+     *
+     * @param Subject $subject
+     * @param bool $result
+     *
+     * @return bool
+     */
+    public function afterHasAdjustmentsHtml(Subject $subject, bool $result): bool
+    {
+        return $result || $this->amountHelper->getInformation($subject) !== '';
+    }
+
+    /**
+     * Adds the information text of the price type after the adjustments.
+     *
+     * @param Subject $subject
+     * @param string $result
+     *
+     * @return string
+     */
+    public function afterGetAdjustmentsHtml(Subject $subject, string $result): string
     {
         $information = $this->amountHelper->getInformation($subject);
 
-        if ($this->variables->isEmpty($information)) {
+        if ($information === '') {
             return $result;
         }
 
-        return $result . $this->blockHelper->renderChildTemplateBlock(
-                $subject,
-                'Infrangible_CatalogProductPrice::price/information.phtml',
-                [
-                    'id' => $subject->getSaleableItem()->getId(),
-                    'information' => $information
-                ]
-            );
+        $html = $this->blockHelper->renderChildTemplateBlock(
+            $subject,
+            'Infrangible_CatalogProductPrice::price/information.phtml',
+            ['information' => $information]
+        );
+
+        return $result . $html;
     }
 }

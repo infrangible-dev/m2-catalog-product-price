@@ -2,62 +2,64 @@
 
 declare(strict_types=1);
 
-namespace Infrangible\CatalogProductPrice\Helper;
-
-use FeWeDev\Base\Variables;
-
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+namespace Infrangible\CatalogProductPrice\Helper;
+
+use Magento\Framework\Pricing\Render\Amount as AmountRender;
+
+/**
+ * The information texts of rendered price amounts by price type.
  */
 class Amount
 {
-    /** @var Variables */
-    protected $variables;
-
-    /** @var FinalPrice */
-    protected $finalPriceHelper;
-
-    /** @var OldPrice */
-    protected $oldPriceHelper;
-
-    /** @var MinPrice */
-    protected $minPriceHelper;
-
-    /** @var MaxPrice */
-    protected $maxPriceHelper;
-
+    /**
+     * @param FinalPrice $finalPriceHelper
+     * @param OldPrice $oldPriceHelper
+     * @param MinPrice $minPriceHelper
+     * @param MaxPrice $maxPriceHelper
+     */
     public function __construct(
-        Variables $variables,
-        FinalPrice $priceHelper,
-        OldPrice $oldPriceHelper,
-        MinPrice $minPriceHelper,
-        MaxPrice $maxPriceHelper
+        protected FinalPrice $finalPriceHelper,
+        protected OldPrice $oldPriceHelper,
+        protected MinPrice $minPriceHelper,
+        protected MaxPrice $maxPriceHelper
     ) {
-        $this->variables = $variables;
-        $this->finalPriceHelper = $priceHelper;
-        $this->oldPriceHelper = $oldPriceHelper;
-        $this->minPriceHelper = $minPriceHelper;
-        $this->maxPriceHelper = $maxPriceHelper;
     }
 
-    public function getInformation(\Magento\Framework\Pricing\Render\Amount $amount): string
+    /**
+     * Returns the information text of the rendered price type as HTML.
+     *
+     * @param AmountRender $amount
+     *
+     * @return string
+     */
+    public function getInformation(AmountRender $amount): string
     {
-        $priceType = $amount->getData('price_type');
+        $valueHelper = $this->getValueHelper($amount->getData('price_type'));
 
-        if ($priceType === 'finalPrice') {
-            $information = $this->finalPriceHelper->getInformation($amount->getSaleableItem());
-        } elseif ($priceType === 'oldPrice') {
-            $information = $this->oldPriceHelper->getInformation($amount->getSaleableItem());
-        } elseif ($priceType === 'minPrice') {
-            $information = $this->minPriceHelper->getInformation($amount->getSaleableItem());
-        } elseif ($priceType === 'maxPrice') {
-            $information = $this->maxPriceHelper->getInformation($amount->getSaleableItem());
-        } else {
-            $information = '';
-        }
+        return $valueHelper === null ? '' : $valueHelper->getInformation($amount->getSaleableItem());
+    }
 
-        return $information === null ? '' : $this->variables->stringValue($information);
+    /**
+     * Returns the helper of the price type, or null for other price types.
+     *
+     * @param mixed $priceType
+     *
+     * @return Value|null
+     */
+    public function getValueHelper(mixed $priceType): ?Value
+    {
+        return match ($priceType) {
+            'finalPrice' => $this->finalPriceHelper,
+            'oldPrice' => $this->oldPriceHelper,
+            'minPrice' => $this->minPriceHelper,
+            'maxPrice' => $this->maxPriceHelper,
+            default => null
+        };
     }
 }

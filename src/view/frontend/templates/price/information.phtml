@@ -6,12 +6,16 @@ use Magento\Framework\View\Element\Template;
 
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
  */
 
 /** @var Template $block */
 
+$information = $block->getData('information');
 ?>
 
-<span class="price-information"><?= $block->getData('information'); ?></span>
+<?php if (is_string($information) && $information !== ''): ?>
+    <?php /* The helper allows only the tags of Value::ALLOWED_INFORMATION_TAGS. */ ?>
+    <span class="price-information"><?= /* @noEscape */ $information ?></span>
+<?php endif; ?>

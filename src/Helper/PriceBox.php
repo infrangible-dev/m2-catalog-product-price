@@ -2,111 +2,75 @@
 
 declare(strict_types=1);
 
+/**
+ * @author      Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
+ * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
 namespace Infrangible\CatalogProductPrice\Helper;
 
-use FeWeDev\Base\Arrays;
-use FeWeDev\Base\Variables;
+use Exception;
+use Infrangible\CatalogProductPrice\Block\Information as InformationBlock;
 use Infrangible\CatalogProductPrice\Block\SpecialPrice;
 use Infrangible\Core\Helper\Block;
 use Infrangible\Core\Helper\Stores;
 use Magento\ConfigurableProduct\Pricing\Render\FinalPriceBox;
+use Magento\Framework\Phrase;
+use Magento\Framework\Pricing\Render\PriceBox as PriceBoxRender;
 
 /**
- * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
- * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ * Labels and the information line of price boxes.
  */
 class PriceBox
 {
-    /** @var Arrays */
-    protected $arrays;
-
-    /** @var Variables */
-    protected $variables;
-
-    /** @var FinalPrice */
-    protected $finalPriceHelper;
-
-    /** @var OldPrice */
-    protected $oldPriceHelper;
-
-    /** @var MinPrice */
-    protected $minPriceHelper;
-
-    /** @var MaxPrice */
-    protected $maxPriceHelper;
-
-    /** @var Information */
-    protected $informationHelper;
-
-    /** @var Block */
-    protected $blockHelper;
-
-    /** @var Stores */
-    protected $storeHelper;
-
+    /**
+     * @param Amount $amountHelper
+     * @param Information $informationHelper
+     * @param Block $blockHelper
+     * @param Stores $storeHelper
+     */
     public function __construct(
-        Arrays $arrays,
-        Variables $variables,
-        FinalPrice $priceHelper,
-        OldPrice $oldPriceHelper,
-        MinPrice $minPriceHelper,
-        MaxPrice $maxPriceHelper,
-        Information $informationHelper,
-        Block $blockHelper,
-        Stores $storeHelper
+        protected Amount $amountHelper,
+        protected Information $informationHelper,
+        protected Block $blockHelper,
+        protected Stores $storeHelper
     ) {
-        $this->arrays = $arrays;
-        $this->variables = $variables;
-        $this->finalPriceHelper = $priceHelper;
-        $this->oldPriceHelper = $oldPriceHelper;
-        $this->minPriceHelper = $minPriceHelper;
-        $this->maxPriceHelper = $maxPriceHelper;
-        $this->informationHelper = $informationHelper;
-        $this->blockHelper = $blockHelper;
-        $this->storeHelper = $storeHelper;
     }
 
-    public function updateDisplayLabel(\Magento\Framework\Pricing\Render\PriceBox $priceBox, array $arguments): array
+    /**
+     * Replaces the label in the arguments of a rendered amount with the label of its price type.
+     *
+     * @param PriceBoxRender $priceBox
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     *
+     * @return array<string, mixed>
+     */
+    public function updateDisplayLabel(PriceBoxRender $priceBox, array $arguments): array
     {
-        $displayLabel = $this->arrays->getValue(
-            $arguments,
-            'display_label',
-            ''
-        );
-        $priceType = $this->arrays->getValue(
-            $arguments,
-            'price_type'
-        );
+        $valueHelper = $this->amountHelper->getValueHelper($arguments[ 'price_type' ] ?? null);
 
-        if ($priceType === 'finalPrice') {
-            $displayLabel = $this->finalPriceHelper->getLabel(
+        if ($valueHelper !== null) {
+            $displayLabel = $arguments[ 'display_label' ] ?? '';
+
+            $arguments[ 'display_label' ] = $valueHelper->getLabel(
                 $priceBox->getSaleableItem(),
-                $displayLabel
-            );
-        } elseif ($priceType === 'oldPrice') {
-            $displayLabel = $this->oldPriceHelper->getLabel(
-                $priceBox->getSaleableItem(),
-                $displayLabel
-            );
-        } elseif ($priceType === 'minPrice') {
-            $displayLabel = $this->minPriceHelper->getLabel(
-                $priceBox->getSaleableItem(),
-                $displayLabel
-            );
-        } elseif ($priceType === 'maxPrice') {
-            $displayLabel = $this->maxPriceHelper->getLabel(
-                $priceBox->getSaleableItem(),
-                $displayLabel
+                $displayLabel instanceof Phrase || is_string($displayLabel) ? $displayLabel : ''
             );
         }
-
-        $arguments[ 'display_label' ] = $displayLabel;
 
         return $arguments;
     }
 
-    public function getInformationHtml(\Magento\Framework\Pricing\Render\PriceBox $priceBox): string
+    /**
+     * Renders the information line of the final price and of prices in product lists.
+     *
+     * @param PriceBoxRender $priceBox
+     *
+     * @return string
+     */
+    public function getInformationHtml(PriceBoxRender $priceBox): string
     {
         if ($priceBox->getData('price_type_code') !== 'final_price' && $priceBox->getData('zone') !== 'item_list') {
             return '';
@@ -114,7 +78,7 @@ class PriceBox
 
         $templateData = $this->informationHelper->getData($priceBox->getSaleableItem());
 
-        if ($this->variables->isEmpty($templateData)) {
+        if (count($templateData) === 0) {
             return '';
         }
 
@@ -122,17 +86,27 @@ class PriceBox
 
         return $this->blockHelper->renderChildTemplateExtendedBlock(
             $priceBox,
-            \Infrangible\CatalogProductPrice\Block\Information::class,
+            InformationBlock::class,
             'Infrangible_CatalogProductPrice::information.phtml',
             $templateData
         );
     }
 
+    /**
+     * Renders the regular price of configurable products with a special price in product lists.
+     *
+     * @param FinalPriceBox $priceBox
+     *
+     * @return string
+     * @throws Exception
+     */
     public function getSpecialPriceHtml(FinalPriceBox $priceBox): string
     {
-        if ($this->storeHelper->getStoreConfigFlag(
-                'infrangible_catalogproductprice/old_price/configurable_special_price'
-            ) && $priceBox->isProductList() && $priceBox->hasSpecialPrice()) {
+        $enabled = $this->storeHelper->getStoreConfigFlag(
+            'infrangible_catalogproductprice/old_price/configurable_special_price'
+        );
+
+        if ($enabled && $priceBox->isProductList() && $priceBox->hasSpecialPrice()) {
 
             return $this->blockHelper->renderChildTemplateExtendedBlock(
                 $priceBox,

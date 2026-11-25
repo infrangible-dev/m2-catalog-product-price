@@ -7,29 +7,37 @@ use Magento\Framework\Escaper;
 
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
  */
 
 /** @var Escaper $escaper */
 /** @var Information $block */
+
+$displayLabel = $block->getData('display_label');
+$amount = $block->getData('amount');
+$information = $block->getData('information');
 ?>
 
 <span class="price-information">
     <span class="price-container price-information_price">
-        <?php if ($block->hasData('display_label')): ?>
-            <span class="price-label"><?= $escaper->escapeHtml($block->getData('display_label')); ?></span>
+        <?php if (is_string($displayLabel) && $displayLabel !== ''): ?>
+            <span class="price-label"><?= $escaper->escapeHtml($displayLabel) ?></span>
         <?php endif; ?>
-        <?php if ($block->hasData('amount')): ?>
-            <span data-price-amount="<?= $escaper->escapeHtmlAttr($block->getData('amount')); ?>"
+        <?php if (is_float($amount) || is_int($amount)): ?>
+            <span data-price-amount="<?= $escaper->escapeHtmlAttr((string)$amount) ?>"
                   data-price-type="price_information"
                   class="price-wrapper"
             >
-                <?= $escaper->escapeHtml($block->formatCurrency($block->getData('amount'), (bool) $block->getData('include_container')), ['span']); ?>
+                <?= $escaper->escapeHtml(
+                    $block->formatCurrency((float)$amount, (bool)$block->getData('include_container')),
+                    ['span']
+                ) ?>
             </span>
         <?php endif; ?>
-        <?php if ($block->hasData('information')): ?>
-            <span class="price-information"><?= $block->getData('information'); ?></span>
+        <?php if (is_string($information) && $information !== ''): ?>
+            <?php /* The helper allows only the tags of Value::ALLOWED_INFORMATION_TAGS. */ ?>
+            <span class="price-information"><?= /* @noEscape */ $information ?></span>
         <?php endif; ?>
     </span>
 </span>

@@ -2,6 +2,12 @@
 
 declare(strict_types=1);
 
+/**
+ * @author      Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
+ * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
 namespace Infrangible\CatalogProductPrice\Plugin\ConfigurableProduct\Block\Product\View\Type;
 
 use FeWeDev\Base\Json;
@@ -11,212 +17,183 @@ use Infrangible\CatalogProductPrice\Helper\Information;
 use Infrangible\CatalogProductPrice\Helper\OldPrice;
 use Infrangible\CatalogProductPrice\Helper\Value;
 use Magento\Catalog\Model\Product;
-use Magento\Framework\Pricing\Amount\AmountInterface;
+use Magento\ConfigurableProduct\Block\Product\View\Type\Configurable as Subject;
 
 /**
- * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
- * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ * Adds the labels, information texts and the information line of the product and its variants to the JSON
+ * configuration of the configurable product. Labels are plain text, information texts are HTML.
  */
 class Configurable
 {
-    /** @var Json */
-    protected $json;
-
-    /** @var Variables */
-    protected $variables;
-
-    /** @var FinalPrice */
-    protected $finalPriceHelper;
-
-    /** @var OldPrice */
-    protected $oldPriceHelper;
-
-    /** @var Information */
-    protected $informationHelper;
-
+    /**
+     * @param FinalPrice $finalPriceHelper
+     * @param Information $informationHelper
+     * @param Json $json
+     * @param OldPrice $oldPriceHelper
+     * @param Variables $variables
+     */
     public function __construct(
-        FinalPrice $finalPriceHelper,
-        Information $informationHelper,
-        Json $json,
-        OldPrice $oldPriceHelper,
-        Variables $variables
+        protected FinalPrice $finalPriceHelper,
+        protected Information $informationHelper,
+        protected Json $json,
+        protected OldPrice $oldPriceHelper,
+        protected Variables $variables
     ) {
-        $this->finalPriceHelper = $finalPriceHelper;
-        $this->informationHelper = $informationHelper;
-        $this->json = $json;
-        $this->oldPriceHelper = $oldPriceHelper;
-        $this->variables = $variables;
     }
 
-    public function afterGetJsonConfig(
-        \Magento\ConfigurableProduct\Block\Product\View\Type\Configurable $subject,
-        string $result
-    ): string {
+    /**
+     * Adds the values of the product and of its variants to the JSON configuration.
+     *
+     * @param Subject $subject
+     * @param string $result
+     *
+     * @return string
+     */
+    public function afterGetJsonConfig(Subject $subject, string $result): string
+    {
         $config = $this->json->decode($result);
 
-        $product = $subject->getProduct();
+        if (! is_array($config)) {
+            return $result;
+        }
 
-        $this->updateFinalPrice(
-            $config,
-            $product
+        $prices = $this->addPrices(
+            $config[ 'prices' ] ?? [],
+            $subject->getProduct()
         );
 
-        $this->updateOldPrice(
-            $config,
-            $product
-        );
+        if ($prices !== []) {
+            $config[ 'prices' ] = $prices;
+        }
 
-        $this->addInformation(
-            $config,
-            $product
-        );
+        $optionPrices = $config[ 'optionPrices' ] ?? [];
+
+        if (! is_array($optionPrices)) {
+            return $this->json->encode($config) ?? $result;
+        }
 
         foreach ($subject->getAllowProducts() as $product) {
-            $this->updateOptionFinalPrice(
-                $config,
+            if (! $product instanceof Product) {
+                continue;
+            }
+
+            $productId = $this->variables->intValue($product->getId());
+
+            $productPrices = $this->addPrices(
+                $optionPrices[ $productId ] ?? [],
                 $product
             );
 
-            $this->updateOptionOldPrice(
-                $config,
-                $product
-            );
-
-            $this->addOptionInformation(
-                $config,
-                $product
-            );
+            if ($productPrices !== []) {
+                $optionPrices[ $productId ] = $productPrices;
+            }
         }
 
-        return $this->json->encode($config);
+        if ($optionPrices !== []) {
+            $config[ 'optionPrices' ] = $optionPrices;
+        }
+
+        return $this->json->encode($config) ?? $result;
     }
 
-    private function updateFinalPrice(array &$config, Product $product): void
+    /**
+     * Adds the labels and information texts of the final and old price and the information line.
+     *
+     * @param mixed $prices
+     * @param Product $product
+     *
+     * @return array<string, mixed>
+     */
+    private function addPrices(mixed $prices, Product $product): array
     {
-        $this->updatePrice(
-            $config,
+        if (! is_array($prices)) {
+            $prices = [];
+        }
+
+        $prices = $this->addPrice(
+            $prices,
             $product,
             $this->finalPriceHelper,
             'finalPrice'
         );
-    }
 
-    private function updateOldPrice(array &$config, Product $product): void
-    {
-        $this->updatePrice(
-            $config,
+        $prices = $this->addPrice(
+            $prices,
             $product,
             $this->oldPriceHelper,
             'oldPrice'
         );
-    }
 
-    private function updatePrice(array &$config, Product $product, Value $valueHelper, string $priceType): void
-    {
-        $displayLabel = $valueHelper->getLabel(
-            $product,
-            ''
-        );
-
-        if (! $this->variables->isEmpty($displayLabel)) {
-            $config[ 'prices' ][ $priceType ][ 'displayLabel' ] = $displayLabel;
-        }
-
-        $information = $valueHelper->getInformation($product);
-
-        if (! $this->variables->isEmpty($information)) {
-            $config[ 'prices' ][ $priceType ][ 'information' ] = $information;
-        }
-    }
-
-    private function addInformation(array &$config, Product $product): void
-    {
-        $displayLabel = $this->informationHelper->getLabel(
-            $product,
-            ''
-        );
-
-        if (! $this->variables->isEmpty($displayLabel)) {
-            $config[ 'prices' ][ 'priceInformation' ][ 'displayLabel' ] = $displayLabel;
-        }
-
-        $price = $this->informationHelper->getPrice($product);
-
-        if (! $this->variables->isEmpty($price) && $price instanceof AmountInterface) {
-            $config[ 'prices' ][ 'priceInformation' ][ 'price' ] = $price->getValue();
-        }
-
-        $information = $this->informationHelper->getInformation($product);
-
-        if (! $this->variables->isEmpty($information)) {
-            $config[ 'prices' ][ 'priceInformation' ][ 'information' ] = $information;
-        }
-    }
-
-    private function updateOptionFinalPrice(array &$config, Product $product): void
-    {
-        $this->updateOptionPrice(
-            $config,
-            $product,
-            $this->finalPriceHelper,
-            'finalPrice'
-        );
-    }
-
-    private function updateOptionOldPrice(array &$config, Product $product): void
-    {
-        $this->updateOptionPrice(
-            $config,
-            $product,
-            $this->oldPriceHelper,
-            'oldPrice'
-        );
-    }
-
-    private function updateOptionPrice(array &$config, Product $product, Value $valueHelper, string $priceType): void
-    {
-        $productId = $product->getId();
-
-        $displayLabel = $valueHelper->getLabel(
-            $product,
-            ''
-        );
-
-        if (! $this->variables->isEmpty($displayLabel)) {
-            $config[ 'optionPrices' ][ $productId ][ $priceType ][ 'displayLabel' ] = $displayLabel;
-        }
-
-        $information = $valueHelper->getInformation($product);
-
-        if (! $this->variables->isEmpty($information)) {
-            $config[ 'optionPrices' ][ $productId ][ $priceType ][ 'information' ] = $information;
-        }
-    }
-
-    private function addOptionInformation(array &$config, Product $product): void
-    {
-        $productId = $product->getId();
+        $information = [];
 
         $displayLabel = $this->informationHelper->getLabel(
             $product,
             ''
         );
 
-        if (! $this->variables->isEmpty($displayLabel)) {
-            $config[ 'optionPrices' ][ $productId ][ 'priceInformation' ][ 'displayLabel' ] = $displayLabel;
+        if ($displayLabel !== '') {
+            $information[ 'displayLabel' ] = $displayLabel;
         }
 
         $price = $this->informationHelper->getPrice($product);
 
-        if (! $this->variables->isEmpty($price) && $price instanceof AmountInterface) {
-            $config[ 'optionPrices' ][ $productId ][ 'priceInformation' ][ 'price' ] = $price->getValue();
+        if ($price !== null) {
+            $information[ 'price' ] = $price->getValue();
         }
 
-        $information = $this->informationHelper->getInformation($product);
+        $informationText = $this->informationHelper->getInformation($product);
 
-        if (! $this->variables->isEmpty($information)) {
-            $config[ 'optionPrices' ][ $productId ][ 'priceInformation' ][ 'information' ] = $information;
+        if ($informationText !== '') {
+            $information[ 'information' ] = $informationText;
         }
+
+        if ($information !== []) {
+            $prices[ 'priceInformation' ] = $information;
+        }
+
+        return $prices;
+    }
+
+    /**
+     * Adds label and information text of a price type, if any.
+     *
+     * @param array $prices
+     * @phpstan-param array<string, mixed> $prices
+     * @param Product $product
+     * @param Value $valueHelper
+     * @param string $priceType
+     *
+     * @return array<string, mixed>
+     */
+    private function addPrice(array $prices, Product $product, Value $valueHelper, string $priceType): array
+    {
+        $displayLabel = $valueHelper->getLabel(
+            $product,
+            ''
+        );
+
+        $information = $valueHelper->getInformation($product);
+
+        if ($displayLabel === '' && $information === '') {
+            return $prices;
+        }
+
+        $price = $prices[ $priceType ] ?? [];
+
+        if (! is_array($price)) {
+            $price = [];
+        }
+
+        if ($displayLabel !== '') {
+            $price[ 'displayLabel' ] = $displayLabel;
+        }
+
+        if ($information !== '') {
+            $price[ 'information' ] = $information;
+        }
+
+        $prices[ $priceType ] = $price;
+
+        return $prices;
     }
 }

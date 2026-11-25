@@ -2,40 +2,55 @@
 
 declare(strict_types=1);
 
-namespace Infrangible\CatalogProductPrice\Plugin\Framework\Pricing\Render;
-
-use Magento\Framework\Pricing\Amount\AmountInterface;
-
 /**
  * @author      Andreas Knollmann
- * @copyright   Copyright (c) 2014-2024 Softwareentwicklung Andreas Knollmann
+ * @copyright   Copyright (c) 2014-2026 Softwareentwicklung Andreas Knollmann
  * @license     http://www.opensource.org/licenses/mit-license.php MIT
+ */
+
+namespace Infrangible\CatalogProductPrice\Plugin\Framework\Pricing\Render;
+
+use Infrangible\CatalogProductPrice\Helper\PriceBox as PriceBoxHelper;
+use Magento\Framework\Pricing\Amount\AmountInterface;
+use Magento\Framework\Pricing\Render\PriceBox as Subject;
+
+/**
+ * Adds the labels and the information line to price boxes.
  */
 class PriceBox
 {
-    /** @var \Infrangible\CatalogProductPrice\Helper\PriceBox */
-    protected $priceBoxHelper;
-
-    public function __construct(\Infrangible\CatalogProductPrice\Helper\PriceBox $priceBoxHelper)
+    /**
+     * @param PriceBoxHelper $priceBoxHelper
+     */
+    public function __construct(protected PriceBoxHelper $priceBoxHelper)
     {
-        $this->priceBoxHelper = $priceBoxHelper;
     }
 
-    public function afterFetchView(\Magento\Framework\Pricing\Render\PriceBox $subject, string $result): string
+    /**
+     * Adds the information line before the price box.
+     *
+     * @param Subject $subject
+     * @param string $result
+     *
+     * @return string
+     */
+    public function afterFetchView(Subject $subject, string $result): string
     {
         return $this->priceBoxHelper->getInformationHtml($subject) . $result;
     }
 
-    public function beforeRenderAmount(
-        \Magento\Framework\Pricing\Render\PriceBox $subject,
-        AmountInterface $amount,
-        array $arguments = []
-    ): array {
-        $arguments = $this->priceBoxHelper->updateDisplayLabel(
-            $subject,
-            $arguments
-        );
-
-        return [$amount, $arguments];
+    /**
+     * Replaces the label of the rendered amount with the label of its price type.
+     *
+     * @param Subject $subject
+     * @param AmountInterface $amount
+     * @param array $arguments
+     * @phpstan-param array<string, mixed> $arguments
+     *
+     * @return array{0: AmountInterface, 1: array<string, mixed>}
+     */
+    public function beforeRenderAmount(Subject $subject, AmountInterface $amount, array $arguments = []): array
+    {
+        return [$amount, $this->priceBoxHelper->updateDisplayLabel($subject, $arguments)];
     }
 }
