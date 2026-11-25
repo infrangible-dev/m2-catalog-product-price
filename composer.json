@@ -1,11 +1,19 @@
 {
     "name": "infrangible/m2-catalog-product-price",
-    "description": "Custom labels and information texts for Magento 2 product prices, plus an extra price line such as a recommended retail price",
+    "description": "Adds custom labels and information texts to product prices (final, old, minimum and maximum price) plus an extra price line such as a recommended retail price, driven by product attributes.",
     "type": "magento2-module",
     "version": "2.0.0",
     "license": "MIT",
     "keywords": [
-        "Magento"
+        "Magento",
+        "Magento 2",
+        "Adobe Commerce",
+        "Pricing",
+        "Catalog",
+        "Hyvä",
+        "custom price labels",
+        "recommended retail price display",
+        "price information texts"
     ],
     "homepage": "https://www.infrangible.dev/modules/catalog-product-price",
     "authors": [
