@@ -30,98 +30,123 @@ define([
         _UpdatePrice: function () {
             this._super();
 
-            const prices = this._getNewPrices();
+            const prices = this._getNewPrices(),
+                options = this.catalogProductPriceOptions;
 
-            $(this.catalogProductPriceOptions.priceBoxSelection).find('span:first').removeClass('special-price');
+            $(options.priceBoxSelection).find('span:first').removeClass('special-price');
 
-            const finalPriceDisplayLabelNode = $(this.catalogProductPriceOptions.finalPriceDisplayLabelSelection);
+            // labels are plain text, information texts are HTML with the tags the module allows
+            if (!this._updatePriceLabel(options.finalPriceDisplayLabelSelection, prices.finalPrice.displayLabel)) {
+                $(options.finalPriceSelection).toggleClass(
+                    'special-price',
+                    prices.oldPrice.amount !== prices.finalPrice.amount
+                );
+            }
 
-            // Labels are plain text, information texts are HTML with the tags the module allows.
-            const finalPriceDisplayLabel = prices.finalPrice.displayLabel;
-            if (finalPriceDisplayLabel) {
-                finalPriceDisplayLabelNode.text(finalPriceDisplayLabel);
-                finalPriceDisplayLabelNode.show();
+            this._updateFinalPriceInformation(prices.finalPrice.information);
+            this._updatePriceLabel(options.oldPriceDisplayLabelSelection, prices.oldPrice.displayLabel);
+            this._updateOldPriceInformation(prices.oldPrice.information);
+            this._updatePriceInformation(prices.priceInformation);
+        },
+
+        /**
+         * Shows the label in the element of the selection, or hides the element without label.
+         *
+         * @param {string} selection
+         * @param {?string} label
+         * @returns {boolean} whether the label is shown
+         */
+        _updatePriceLabel: function (selection, label) {
+            const labelNode = $(selection);
+
+            if (label) {
+                labelNode.text(label);
+                labelNode.show();
+
+                return true;
+            }
+
+            labelNode.text('');
+            labelNode.hide();
+
+            return false;
+        },
+
+        /**
+         * Shows the information text of the final price after it, or hides it without text.
+         *
+         * @param {?string} information
+         */
+        _updateFinalPriceInformation: function (information) {
+            let informationNode = $(this.catalogProductPriceOptions.finalPriceInformationSelection);
+
+            if (informationNode.length === 0) {
+                informationNode = $('<span>', {class: 'price-information'});
+                $(this.catalogProductPriceOptions.finalPricePriceSelection).after(informationNode);
+            }
+
+            if (information) {
+                informationNode.html(information);
+                informationNode.show();
             } else {
-                finalPriceDisplayLabelNode.text('');
-                finalPriceDisplayLabelNode.hide();
+                informationNode.html('');
+                informationNode.hide();
+            }
+        },
 
-                const isShow = prices.oldPrice.amount !== prices.finalPrice.amount;
-                $(this.catalogProductPriceOptions.finalPriceSelection).toggleClass('special-price', isShow);
+        /**
+         * Shows the information text of the old price after it, or removes it without text.
+         *
+         * @param {?string} information
+         */
+        _updateOldPriceInformation: function (information) {
+            let informationNode = $(this.catalogProductPriceOptions.oldPriceInformationSelection);
+
+            if (!information) {
+                informationNode.remove();
+
+                return;
             }
 
-            let finalPriceInformationNode = $(this.catalogProductPriceOptions.finalPriceInformationSelection);
-            if (finalPriceInformationNode.length === 0) {
-                finalPriceInformationNode = $('<span>', {class: 'price-information'});
-                $(this.catalogProductPriceOptions.finalPricePriceSelection).after(finalPriceInformationNode);
+            if (informationNode.length === 0) {
+                informationNode = $('<span>', {class: 'price-information'});
+                $(this.catalogProductPriceOptions.oldPricePriceSelection).after(informationNode);
             }
 
-            const finalPriceInformation = prices.finalPrice.information;
-            if (finalPriceInformation) {
-                finalPriceInformationNode.html(finalPriceInformation);
-                finalPriceInformationNode.show();
-            } else {
-                finalPriceInformationNode.html('');
-                finalPriceInformationNode.hide();
-            }
+            informationNode.html(information);
+            informationNode.show();
+        },
 
-            const oldPriceDisplayLabelNode = $(this.catalogProductPriceOptions.oldPriceDisplayLabelSelection);
-
-            const oldPriceDisplayLabel = prices.oldPrice.displayLabel;
-            if (oldPriceDisplayLabel) {
-                oldPriceDisplayLabelNode.text(oldPriceDisplayLabel);
-                oldPriceDisplayLabelNode.show();
-            } else {
-                oldPriceDisplayLabelNode.text('');
-                oldPriceDisplayLabelNode.hide();
-            }
-
-            let oldPriceInformationNode = $(this.catalogProductPriceOptions.oldPriceInformationSelection);
-
-            const oldPriceInformation = prices.oldPrice.information;
-            if (oldPriceInformation) {
-                if (oldPriceInformationNode.length === 0) {
-                    oldPriceInformationNode = $('<span>', {class: 'price-information'});
-                    $(this.catalogProductPriceOptions.oldPricePriceSelection).after(oldPriceInformationNode);
-                }
-
-                oldPriceInformationNode.html(oldPriceInformation);
-                oldPriceInformationNode.show();
-            } else {
-                if (oldPriceInformationNode.length > 0) {
-                    oldPriceInformationNode.remove();
-                }
-            }
-
+        /**
+         * Shows the information price of the variant before the final price, or removes it without one.
+         *
+         * @param {?Object} priceInformation
+         */
+        _updatePriceInformation: function (priceInformation) {
             let informationNode = $(this.catalogProductPriceOptions.informationSelection);
 
-            const priceInformation = prices.priceInformation;
-            if (priceInformation) {
-                if (informationNode.length === 0) {
-                    informationNode = $('<span>', {class: 'price-information'});
-                    $(this.catalogProductPriceOptions.finalPriceSelection).before(informationNode);
-                }
+            if (!priceInformation) {
+                informationNode.remove();
 
-                const templateData = {};
+                return;
+            }
 
-                templateData.displayLabel = priceInformation.displayLabel;
+            if (informationNode.length === 0) {
+                informationNode = $('<span>', {class: 'price-information'});
+                $(this.catalogProductPriceOptions.finalPriceSelection).before(informationNode);
+            }
 
-                const informationAmountValue = priceInformation.price;
-                templateData.amountValue = informationAmountValue;
+            informationNode.html(template($('#catalog-product-price-information-template').html(), {
+                displayLabel: priceInformation.displayLabel,
+                amountValue: priceInformation.price,
                 // formatted like Magento's price box formats the other prices, without sign
-                templateData.amount = informationAmountValue ? priceUtils.formatPriceLocale(
-                    informationAmountValue,
+                amount: priceInformation.price ? priceUtils.formatPriceLocale(
+                    priceInformation.price,
                     this.options.jsonConfig.currencyFormat,
                     false
-                ) : null;
-
-                templateData.information = priceInformation.information;
-
-                informationNode.html(template($('#catalog-product-price-information-template').html(), templateData));
-            } else {
-                if (informationNode.length > 0) {
-                    informationNode.remove();
-                }
-            }
+                ) : null,
+                information: priceInformation.information
+            }));
         }
     };
 
